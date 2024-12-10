@@ -1,0 +1,6 @@
+[submodule "sns-frontend"]
+	path = sns-frontend
+	url = git@github.com:n4mlz/sns-frontend.git
+[submodule "sns-backend"]
+	path = sns-backend
+	url = git@github.com:n4mlz/sns-backend.git
