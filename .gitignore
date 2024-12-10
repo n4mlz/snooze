@@ -1,5 +1,13 @@
+# ssl
 /letsencrypt/*
 !/letsencrypt/.gitkeep
 
+# env
 .env*
 !.env.example
+
+# metrics
+prometheus_data/*
+!prometheus_data/.gitkeep
+grafana_data/*
+!grafana_data/.gitkeep

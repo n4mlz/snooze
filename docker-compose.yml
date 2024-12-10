@@ -13,6 +13,35 @@ services:
         source: /var/run/docker.sock
         target: /var/run/docker.sock
     restart: always
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    tty: true
+    ports:
+      - 9090:9090
+    volumes:
+      - type: bind
+        source: ./prometheus
+        target: /etc/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    user: ":"
+    restart: always
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    tty: true
+    ports:
+      - 3001:3000
+    user: ":"
+    restart: always
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: node-exporter
+    tty: true
+    ports:
+      - 9100:9100
+    restart: always
 networks:
   default:
     name: sns-network
