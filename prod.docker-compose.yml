@@ -1,0 +1,18 @@
+services:
+  traefik:
+    image: traefik:v3.2
+    container_name: traefik
+    command:
+      - --providers.docker.exposedByDefault=false
+      - --entryPoints.web.address=:80
+      - --log.level=DEBUG
+    ports:
+      - 80:80
+    volumes:
+      - type: bind
+        source: /var/run/docker.sock
+        target: /var/run/docker.sock
+    restart: always
+networks:
+  default:
+    name: sns-network
