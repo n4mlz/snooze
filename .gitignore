@@ -1,0 +1,5 @@
+/letsencrypt/*
+!/letsencrypt/.gitkeep
+
+.env*
+!.env.example
