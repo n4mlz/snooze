@@ -14,7 +14,7 @@ services:
         target: /var/run/docker.sock
     restart: always
   prometheus:
-    image: prom/prometheus:latest
+    image: prom/prometheus:v3.0.1
     container_name: prometheus
     tty: true
     ports:
@@ -28,7 +28,7 @@ services:
     user: ":"
     restart: always
   grafana:
-    image: grafana/grafana:latest
+    image: grafana/grafana:11.4.0
     container_name: grafana
     tty: true
     ports:
@@ -36,7 +36,7 @@ services:
     user: ":"
     restart: always
   node-exporter:
-    image: prom/node-exporter:latest
+    image: prom/node-exporter:v1.8.2
     container_name: node-exporter
     tty: true
     ports:
