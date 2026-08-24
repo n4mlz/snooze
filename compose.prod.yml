@@ -1,0 +1,31 @@
+services:
+  backend:
+    image: ${BACKEND_IMAGE}
+    container_name: snooze-backend
+    env_file:
+      - ${ENV_DIR:-env/prod}/backend.env
+    volumes:
+      - ./sns-backend/serviceAccountKey.json:/serviceAccountKey.json:ro
+    depends_on:
+      db:
+        condition: service_healthy
+    labels:
+      traefik.enable: "true"
+      traefik.docker.network: sns-network
+      traefik.http.routers.backend.entrypoints: web
+      traefik.http.routers.backend.rule: PathPrefix(`/api`)
+      traefik.http.routers.backend.priority: "100"
+      traefik.http.services.backend.loadbalancer.server.port: "8080"
+    restart: unless-stopped
+
+  frontend:
+    image: ${FRONTEND_IMAGE}
+    container_name: snooze-frontend
+    labels:
+      traefik.enable: "true"
+      traefik.docker.network: sns-network
+      traefik.http.routers.frontend.entrypoints: web
+      traefik.http.routers.frontend.rule: PathPrefix(`/`)
+      traefik.http.routers.frontend.priority: "10"
+      traefik.http.services.frontend.loadbalancer.server.port: "3000"
+    restart: unless-stopped

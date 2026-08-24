@@ -1,0 +1,58 @@
+name: snooze
+
+services:
+  db:
+    image: mariadb:11.6
+    container_name: snooze-db
+    env_file:
+      - ${ENV_DIR:-env/dev}/db.env
+    volumes:
+      - ./sns-backend/sql_init:/docker-entrypoint-initdb.d:ro
+      - ./sns-backend/sql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mariadb-admin ping -h localhost -u root -p$$MARIADB_ROOT_PASSWORD"]
+      timeout: 5s
+      interval: 5s
+      retries: 10
+    restart: unless-stopped
+
+  traefik:
+    image: traefik:v3.2
+    container_name: snooze-traefik
+    command:
+      - --providers.docker.exposedByDefault=false
+      - --entryPoints.web.address=:80
+    ports:
+      - "80:80"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:v3.0.1
+    container_name: snooze-prometheus
+    volumes:
+      - ./prometheus:/etc/prometheus:ro
+      - ./prometheus_data:/prometheus
+    command: ["--config.file=/etc/prometheus/prometheus.yml"]
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:11.4.0
+    container_name: snooze-grafana
+    env_file:
+      - ${ENV_DIR:-env/dev}/infra.env
+    ports:
+      - "${METRICS_DASHBOARD_PORT:-3001}:3000"
+    volumes:
+      - ./grafana_data:/var/lib/grafana
+    restart: unless-stopped
+
+  node-exporter:
+    image: prom/node-exporter:v1.8.2
+    container_name: snooze-node-exporter
+    restart: unless-stopped
+
+networks:
+  default:
+    name: sns-network
