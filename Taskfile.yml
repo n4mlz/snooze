@@ -1,0 +1,39 @@
+version: '3'
+
+tasks:
+  setup:
+    desc: Create local environment files from templates
+    cmds:
+      - for: [dev, prod]
+        cmd: for file in env/{{.ITEM}}/*.env.example; do cp "$file" "${file%.example}"; done
+
+  dev:
+    desc: Start the Docker-only development environment
+    cmds:
+      - docker compose --env-file env/dev/compose.env -f compose.yml -f compose.dev.yml up --build
+
+  deploy:
+    desc: Pull release images and start production
+    cmds:
+      - docker compose --env-file env/prod/compose.env -f compose.yml -f compose.prod.yml pull
+      - docker compose --env-file env/prod/compose.env -f compose.yml -f compose.prod.yml up -d --remove-orphans
+
+  config:
+    desc: Validate the development Compose configuration
+    cmds:
+      - docker compose --env-file env/dev/compose.env -f compose.yml -f compose.dev.yml config --quiet
+
+  config:prod:
+    desc: Validate the production Compose configuration
+    cmds:
+      - docker compose --env-file env/prod/compose.env -f compose.yml -f compose.prod.yml config --quiet
+
+  down:
+    desc: Stop the local environment
+    cmds:
+      - docker compose --env-file env/dev/compose.env -f compose.yml -f compose.dev.yml down
+
+  logs:
+    desc: Follow local service logs
+    cmds:
+      - docker compose --env-file env/dev/compose.env -f compose.yml -f compose.dev.yml logs -f

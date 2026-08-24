@@ -6,6 +6,10 @@
 .env*
 !.env.example
 
+# Local environment files. Keep only the documented templates.
+env/*/*.env
+!env/*/*.env.example
+
 # metrics
 prometheus_data/*
 !prometheus_data/.gitkeep
