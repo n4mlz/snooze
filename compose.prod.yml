@@ -20,16 +20,7 @@ services:
   alertmanager:
     restart: always
 
-  loki:
-    restart: always
-
-  alloy:
-    restart: always
-
   blackbox-exporter:
-    restart: always
-
-  cadvisor:
     restart: always
 
   mysqld-exporter:
@@ -50,13 +41,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 6
-    labels:
-      traefik.enable: "true"
-      traefik.docker.network: sns-network
-      traefik.http.routers.backend.entrypoints: web
-      traefik.http.routers.backend.rule: PathPrefix(`/api`)
-      traefik.http.routers.backend.priority: "100"
-      traefik.http.services.backend.loadbalancer.server.port: "8080"
     restart: always
 
   frontend:
@@ -67,11 +51,4 @@ services:
       interval: 10s
       timeout: 5s
       retries: 6
-    labels:
-      traefik.enable: "true"
-      traefik.docker.network: sns-network
-      traefik.http.routers.frontend.entrypoints: web
-      traefik.http.routers.frontend.rule: PathPrefix(`/`)
-      traefik.http.routers.frontend.priority: "10"
-      traefik.http.services.frontend.loadbalancer.server.port: "3000"
     restart: always

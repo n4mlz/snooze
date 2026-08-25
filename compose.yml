@@ -1,31 +1,6 @@
 name: snooze
 
 services:
-  docker-socket-proxy:
-    image: ghcr.io/tecnativa/docker-socket-proxy:v0.4.1
-    container_name: snooze-docker-socket-proxy
-    environment:
-      CONTAINERS: "1"
-      EVENTS: "1"
-      INFO: "1"
-      NETWORKS: "1"
-      PING: "1"
-      POST: "0"
-      VERSION: "1"
-    read_only: true
-    security_opt:
-      - no-new-privileges:true
-    tmpfs:
-      - /tmp
-      - /run
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-    networks:
-      docker-socket:
-        aliases:
-          - docker-socket-proxy
-    restart: unless-stopped
-
   db:
     image: mariadb:11.6
     container_name: snooze-db
@@ -59,20 +34,16 @@ services:
     image: traefik:v3.7.1
     container_name: snooze-traefik
     command:
-      - --providers.docker.exposedByDefault=false
-      - --providers.docker.endpoint=tcp://docker-socket-proxy:2375
+      - --providers.file.filename=/etc/traefik/dynamic.yml
+      - --providers.file.watch=true
       - --entryPoints.web.address=:80
       - --entryPoints.metrics.address=:8082
       - --metrics.prometheus=true
       - --metrics.prometheus.entryPoint=metrics
     ports:
       - "80:80"
-    depends_on:
-      docker-socket-proxy:
-        condition: service_started
-    networks:
-      - default
-      - docker-socket
+    volumes:
+      - ./traefik/dynamic.yml:/etc/traefik/dynamic.yml:ro
     restart: unless-stopped
 
   prometheus:
@@ -129,51 +100,12 @@ services:
       retries: 5
     restart: unless-stopped
 
-  loki:
-    image: grafana/loki:3.3.2
-    container_name: snooze-loki
-    command: ["-config.file=/etc/loki/loki.yml"]
-    volumes:
-      - ./loki:/etc/loki:ro
-      - loki_data:/loki
-    restart: unless-stopped
-
-  alloy:
-    image: grafana/alloy:v1.5.1
-    container_name: snooze-alloy
-    command:
-      - run
-      - --server.http.listen-addr=0.0.0.0:12345
-      - --storage.path=/var/lib/alloy/data
-      - /etc/alloy/config.alloy
-    volumes:
-      - ./alloy:/etc/alloy:ro
-      - alloy_data:/var/lib/alloy
-    depends_on:
-      - loki
-      - docker-socket-proxy
-    networks:
-      - default
-      - docker-socket
-    restart: unless-stopped
-
   blackbox-exporter:
     image: prom/blackbox-exporter:v0.25.0
     container_name: snooze-blackbox-exporter
     volumes:
       - ./prometheus/blackbox.yml:/config/blackbox.yml:ro
     command: ["--config.file=/config/blackbox.yml"]
-    restart: unless-stopped
-
-  cadvisor:
-    image: gcr.io/cadvisor/cadvisor:v0.51.0
-    container_name: snooze-cadvisor
-    volumes:
-      - /:/rootfs:ro
-      - /var/run:/var/run:ro
-      - /sys:/sys:ro
-      - /var/lib/docker:/var/lib/docker:ro
-      - /dev/disk:/dev/disk:ro
     restart: unless-stopped
 
   mysqld-exporter:
@@ -203,12 +135,8 @@ services:
 networks:
   default:
     name: sns-network
-  docker-socket:
-    internal: true
 
 volumes:
   prometheus_data:
   grafana_data:
   alertmanager_data:
-  loki_data:
-  alloy_data:
