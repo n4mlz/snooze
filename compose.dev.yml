@@ -1,4 +1,12 @@
 services:
+  prometheus:
+    ports:
+      - "127.0.0.1:9090:9090"
+
+  alertmanager:
+    ports:
+      - "127.0.0.1:9093:9093"
+
   backend:
     image: golang:1.23
     container_name: snooze-backend

@@ -16,16 +16,34 @@ services:
       retries: 10
     restart: unless-stopped
 
+  db-monitor-init:
+    image: mariadb:11.6
+    container_name: snooze-db-monitor-init
+    env_file:
+      - ${ENV_DIR:-env/dev}/db.env
+      - ${ENV_DIR:-env/dev}/mysqld-exporter.env
+    depends_on:
+      db:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "/etc/mysqld-exporter/db-monitor-init.sh"]
+    volumes:
+      - ./monitoring/db-monitor-init.sh:/etc/mysqld-exporter/db-monitor-init.sh:ro
+    restart: "no"
+
   traefik:
-    image: traefik:v3.2
+    image: traefik:v3.7.1
     container_name: snooze-traefik
     command:
-      - --providers.docker.exposedByDefault=false
+      - --providers.file.filename=/etc/traefik/dynamic.yml
+      - --providers.file.watch=true
       - --entryPoints.web.address=:80
+      - --entryPoints.metrics.address=:8082
+      - --metrics.prometheus=true
+      - --metrics.prometheus.entryPoint=metrics
     ports:
       - "80:80"
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik/dynamic.yml:/etc/traefik/dynamic.yml:ro
     restart: unless-stopped
 
   prometheus:
@@ -33,8 +51,13 @@ services:
     container_name: snooze-prometheus
     volumes:
       - ./prometheus:/etc/prometheus:ro
-      - ./prometheus_data:/prometheus
+      - prometheus_data:/prometheus
     command: ["--config.file=/etc/prometheus/prometheus.yml"]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:9090/-/ready >/dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     restart: unless-stopped
 
   grafana:
@@ -42,17 +65,78 @@ services:
     container_name: snooze-grafana
     env_file:
       - ${ENV_DIR:-env/dev}/infra.env
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_SECURITY_DISABLE_GRAVATAR: "true"
+      GF_USERS_ALLOW_SIGN_UP: "false"
     ports:
-      - "${METRICS_DASHBOARD_PORT:-3001}:3000"
+      - "127.0.0.1:${METRICS_DASHBOARD_PORT:-3001}:3000"
     volumes:
-      - ./grafana_data:/var/lib/grafana
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/api/health >/dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    container_name: snooze-alertmanager
+    env_file:
+      - ${ENV_DIR:-env/dev}/infra.env
+    volumes:
+      - ./alertmanager/runtime.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager_data:/alertmanager
+    command:
+      - --config.file=/etc/alertmanager/alertmanager.yml
+      - --storage.path=/alertmanager
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:9093/-/ready >/dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  blackbox-exporter:
+    image: prom/blackbox-exporter:v0.25.0
+    container_name: snooze-blackbox-exporter
+    volumes:
+      - ./prometheus/blackbox.yml:/config/blackbox.yml:ro
+    command: ["--config.file=/config/blackbox.yml"]
+    restart: unless-stopped
+
+  mysqld-exporter:
+    image: prom/mysqld-exporter:v0.15.1
+    container_name: snooze-mysqld-exporter
+    env_file:
+      - ${ENV_DIR:-env/dev}/mysqld-exporter.env
+    entrypoint: ["/bin/sh", "/etc/mysqld-exporter/entrypoint.sh"]
+    volumes:
+      - ./monitoring/mysqld-exporter-entrypoint.sh:/etc/mysqld-exporter/entrypoint.sh:ro
+    depends_on:
+      db-monitor-init:
+        condition: service_completed_successfully
     restart: unless-stopped
 
   node-exporter:
     image: prom/node-exporter:v1.8.2
     container_name: snooze-node-exporter
+    command:
+      - --path.rootfs=/host
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/host:ro,rslave
     restart: unless-stopped
 
 networks:
   default:
     name: sns-network
+
+volumes:
+  prometheus_data:
+  grafana_data:
+  alertmanager_data:

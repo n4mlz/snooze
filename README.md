@@ -14,3 +14,5 @@ task deploy
 CI が GHCR に公開した frontend/backend イメージを pull して起動します。
 
 CI には frontend の `NEXT_PUBLIC_*` を Repository Variables として登録します。
+
+監視基盤の構成・Tailscale の初回設定は [docs/monitoring.md](docs/monitoring.md) を参照してください。

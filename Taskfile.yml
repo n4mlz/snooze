@@ -5,26 +5,51 @@ tasks:
     desc: Create local environment files from templates
     cmds:
       - for: [dev, prod]
-        cmd: for file in env/{{.ITEM}}/*.env.example; do cp "$file" "${file%.example}"; done
+        cmd: for file in env/{{.ITEM}}/*.env.example; do target="${file%.example}"; test -e "$target" || cp "$file" "$target"; done
 
   dev:
     desc: Start the Docker-only development environment
+    deps: [monitoring:config:dev]
     cmds:
       - docker compose --env-file env/dev/compose.env -f compose.yml -f compose.dev.yml up --build
 
   deploy:
     desc: Pull release images and start production
+    deps: [monitoring:config:prod]
     cmds:
       - docker compose --env-file env/prod/compose.env -f compose.yml -f compose.prod.yml pull
-      - docker compose --env-file env/prod/compose.env -f compose.yml -f compose.prod.yml up -d --remove-orphans
+      - docker compose --env-file env/prod/compose.env -f compose.yml -f compose.prod.yml up -d --wait --remove-orphans
+      - tailscale serve --bg --https=443 http://127.0.0.1:3001
+
+  monitoring:serve:
+    desc: Expose Grafana through Tailscale Serve
+    cmds:
+      - tailscale serve --bg --https=443 http://127.0.0.1:3001
+
+  monitoring:serve:status:
+    desc: Show Tailscale Serve status
+    cmds:
+      - tailscale serve status
+
+  monitoring:config:dev:
+    desc: Render the local Alertmanager configuration from the development environment
+    cmds:
+      - sh -c 'set -a; . env/dev/infra.env; set +a; envsubst < alertmanager/alertmanager.yml > alertmanager/runtime.yml'
+
+  monitoring:config:prod:
+    desc: Render the local Alertmanager configuration from the production environment
+    cmds:
+      - sh -c 'set -a; . env/prod/infra.env; set +a; envsubst < alertmanager/alertmanager.yml > alertmanager/runtime.yml'
 
   config:
     desc: Validate the development Compose configuration
+    deps: [monitoring:config:dev]
     cmds:
       - docker compose --env-file env/dev/compose.env -f compose.yml -f compose.dev.yml config --quiet
 
   config:prod:
     desc: Validate the production Compose configuration
+    deps: [monitoring:config:prod]
     cmds:
       - docker compose --env-file env/prod/compose.env -f compose.yml -f compose.prod.yml config --quiet
 
