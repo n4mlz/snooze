@@ -3,11 +3,11 @@ logging {
 }
 
 discovery.docker "containers" {
-	host = "unix:///var/run/docker.sock"
+	host = "http://docker-socket-proxy:2375"
 }
 
 loki.source.docker "containers" {
-	host       = "unix:///var/run/docker.sock"
+	host       = "http://docker-socket-proxy:2375"
 	targets    = discovery.docker.containers.targets
 	forward_to = [loki.relabel.containers.receiver]
 }

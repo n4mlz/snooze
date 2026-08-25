@@ -1,6 +1,31 @@
 name: snooze
 
 services:
+  docker-socket-proxy:
+    image: ghcr.io/tecnativa/docker-socket-proxy:v0.4.1
+    container_name: snooze-docker-socket-proxy
+    environment:
+      CONTAINERS: "1"
+      EVENTS: "1"
+      INFO: "1"
+      NETWORKS: "1"
+      PING: "1"
+      POST: "0"
+      VERSION: "1"
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp
+      - /run
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      docker-socket:
+        aliases:
+          - docker-socket-proxy
+    restart: unless-stopped
+
   db:
     image: mariadb:11.6
     container_name: snooze-db
@@ -35,14 +60,19 @@ services:
     container_name: snooze-traefik
     command:
       - --providers.docker.exposedByDefault=false
+      - --providers.docker.endpoint=tcp://docker-socket-proxy:2375
       - --entryPoints.web.address=:80
       - --entryPoints.metrics.address=:8082
       - --metrics.prometheus=true
       - --metrics.prometheus.entryPoint=metrics
     ports:
       - "80:80"
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      docker-socket-proxy:
+        condition: service_started
+    networks:
+      - default
+      - docker-socket
     restart: unless-stopped
 
   prometheus:
@@ -119,9 +149,12 @@ services:
     volumes:
       - ./alloy:/etc/alloy:ro
       - alloy_data:/var/lib/alloy
-      - /var/run/docker.sock:/var/run/docker.sock:ro
     depends_on:
       - loki
+      - docker-socket-proxy
+    networks:
+      - default
+      - docker-socket
     restart: unless-stopped
 
   blackbox-exporter:
@@ -135,9 +168,6 @@ services:
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:v0.51.0
     container_name: snooze-cadvisor
-    privileged: true
-    devices:
-      - /dev/kmsg:/dev/kmsg
     volumes:
       - /:/rootfs:ro
       - /var/run:/var/run:ro
@@ -173,6 +203,8 @@ services:
 networks:
   default:
     name: sns-network
+  docker-socket:
+    internal: true
 
 volumes:
   prometheus_data:
