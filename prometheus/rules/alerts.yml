@@ -1,0 +1,56 @@
+groups:
+  - name: snooze-availability
+    rules:
+      - alert: TargetDown
+        expr: up == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "監視対象が停止しています"
+          description: "{{ $labels.job }} / {{ $labels.instance }} が2分以上 down です。"
+
+      - alert: BackendHighErrorRate
+        expr: |
+          sum(rate(snooze_http_requests_total{status=~"5.."}[5m]))
+            /
+          clamp_min(sum(rate(snooze_http_requests_total[5m])), 1) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "backend の5xx率が高くなっています"
+          description: "直近5分の5xx率が5%を超えています。"
+
+      - alert: BackendHighLatency
+        expr: |
+          histogram_quantile(0.95,
+            sum by (le) (rate(snooze_http_request_duration_seconds_bucket[5m]))
+          ) > 1
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "backend のレスポンスが遅くなっています"
+          description: "p95 レスポンスタイムが1秒を超えています。"
+
+      - alert: HostDiskAlmostFull
+        expr: |
+          100 * (1 - node_filesystem_avail_bytes{fstype!~"tmpfs|overlay"}
+            / node_filesystem_size_bytes{fstype!~"tmpfs|overlay"}) > 85
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "ディスク使用率が高くなっています"
+          description: "{{ $labels.mountpoint }} の使用率が85%を超えています。"
+
+      - alert: HostMemoryAlmostFull
+        expr: |
+          100 * (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) > 90
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "メモリ使用率が高くなっています"
+          description: "ホストのメモリ使用率が90%を超えています。"

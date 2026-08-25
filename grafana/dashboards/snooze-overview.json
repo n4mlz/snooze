@@ -1,0 +1,23 @@
+{
+  "annotations": {"list": []},
+  "editable": false,
+  "graphTooltip": 1,
+  "panels": [
+    {"type":"stat","title":"Down targets","gridPos":{"h":4,"w":6,"x":0,"y":0},"targets":[{"expr":"count(up == 0) or vector(0)","refId":"A"}],"options":{"colorMode":"value","graphMode":"none","justifyMode":"auto","reduceOptions":{"calcs":["lastNotNull"],"fields":"","values":false}},"fieldConfig":{"defaults":{"thresholds":{"mode":"absolute","steps":[{"color":"green","value":null},{"color":"red","value":1}]}}}},
+    {"type":"stat","title":"HTTP 5xx / 5m","gridPos":{"h":4,"w":6,"x":6,"y":0},"targets":[{"expr":"sum(rate(snooze_http_requests_total{status=~\"5..\"}[5m]))","refId":"A"}],"options":{"colorMode":"value","graphMode":"none","justifyMode":"auto","reduceOptions":{"calcs":["lastNotNull"],"fields":"","values":false}},"fieldConfig":{"defaults":{"thresholds":{"mode":"absolute","steps":[{"color":"green","value":null},{"color":"red","value":0.1}]}}}},
+    {"type":"timeseries","title":"Requests / second","gridPos":{"h":8,"w":12,"x":0,"y":4},"targets":[{"expr":"sum by (route, status) (rate(snooze_http_requests_total[5m]))","legendFormat":"{{route}} {{status}}","refId":"A"}]},
+    {"type":"timeseries","title":"Backend p95 latency","gridPos":{"h":8,"w":12,"x":12,"y":4},"targets":[{"expr":"histogram_quantile(0.95, sum by (le) (rate(snooze_http_request_duration_seconds_bucket[5m])))","legendFormat":"p95","refId":"A"}],"fieldConfig":{"defaults":{"unit":"s"}}},
+    {"type":"timeseries","title":"Host memory usage","gridPos":{"h":8,"w":12,"x":0,"y":12},"targets":[{"expr":"100 * (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)","legendFormat":"memory %","refId":"A"}],"fieldConfig":{"defaults":{"unit":"percent"}}},
+    {"type":"timeseries","title":"Host filesystem usage","gridPos":{"h":8,"w":12,"x":12,"y":12},"targets":[{"expr":"100 * (1 - node_filesystem_avail_bytes{fstype!~\"tmpfs|overlay\"} / node_filesystem_size_bytes{fstype!~\"tmpfs|overlay\"})","legendFormat":"{{mountpoint}}","refId":"A"}],"fieldConfig":{"defaults":{"unit":"percent"}}},
+    {"type":"logs","title":"Recent container logs","gridPos":{"h":8,"w":24,"x":0,"y":20},"datasource":{"type":"loki","uid":"loki"},"targets":[{"expr":"{service=~\".+\"}","queryType":"range","refId":"A"}],"options":{"showTime":true,"showLabels":true,"wrapLines":false,"sortOrder":"Descending"}}
+  ],
+  "schemaVersion": 39,
+  "style": "dark",
+  "tags": ["snooze", "overview"],
+  "templating": {"list": []},
+  "time": {"from":"now-6h","to":"now"},
+  "timezone": "browser",
+  "title": "Snooze overview",
+  "uid": "snooze-overview",
+  "version": 1
+}
