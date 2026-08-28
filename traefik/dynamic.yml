@@ -1,4 +1,11 @@
 http:
+  middlewares:
+    api-rate-limit:
+      rateLimit:
+        average: 120
+        period: 1m
+        burst: 30
+
   routers:
     backend:
       entryPoints:
@@ -6,6 +13,8 @@ http:
       rule: PathPrefix(`/api`)
       priority: 100
       service: backend
+      middlewares:
+        - api-rate-limit
 
     frontend:
       entryPoints:
