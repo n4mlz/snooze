@@ -31,7 +31,7 @@ services:
     restart: "no"
 
   traefik:
-    image: traefik:v3.7.1
+    image: traefik:v3.7.12
     container_name: snooze-traefik
     command:
       - --providers.file.filename=/etc/traefik/dynamic.yml
