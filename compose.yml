@@ -109,7 +109,7 @@ services:
     restart: unless-stopped
 
   mysqld-exporter:
-    image: prom/mysqld-exporter:v0.15.1
+    image: prom/mysqld-exporter:v0.20.0
     container_name: snooze-mysqld-exporter
     env_file:
       - ${ENV_DIR:-env/dev}/mysqld-exporter.env
