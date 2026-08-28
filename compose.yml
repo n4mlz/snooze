@@ -83,7 +83,7 @@ services:
     restart: unless-stopped
 
   alertmanager:
-    image: prom/alertmanager:v0.27.0
+    image: prom/alertmanager:v0.34.0
     container_name: snooze-alertmanager
     env_file:
       - ${ENV_DIR:-env/dev}/infra.env
