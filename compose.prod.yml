@@ -41,6 +41,13 @@ services:
       interval: 10s
       timeout: 5s
       retries: 6
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
     restart: always
 
   frontend:
@@ -51,4 +58,11 @@ services:
       interval: 10s
       timeout: 5s
       retries: 6
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
     restart: always
