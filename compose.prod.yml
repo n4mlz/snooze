@@ -29,6 +29,7 @@ services:
   backend:
     image: ${BACKEND_IMAGE}
     container_name: snooze-backend
+    user: "999:999"
     env_file:
       - ${ENV_DIR:-env/prod}/backend.env
     volumes:
