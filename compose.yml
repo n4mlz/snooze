@@ -101,7 +101,7 @@ services:
     restart: unless-stopped
 
   blackbox-exporter:
-    image: prom/blackbox-exporter:v0.29.0
+    image: prom/blackbox-exporter:v0.29.1
     container_name: snooze-blackbox-exporter
     volumes:
       - ./prometheus/blackbox.yml:/config/blackbox.yml:ro
