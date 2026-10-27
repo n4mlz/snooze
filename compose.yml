@@ -61,7 +61,7 @@ services:
     restart: unless-stopped
 
   grafana:
-    image: grafana/grafana:13.2.4
+    image: grafana/grafana:13.3.0
     container_name: snooze-grafana
     env_file:
       - ${ENV_DIR:-env/dev}/infra.env
