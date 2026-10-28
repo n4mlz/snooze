@@ -26,7 +26,7 @@ services:
     restart: unless-stopped
 
   frontend:
-    image: node:24-alpine
+    image: node:26-alpine
     container_name: snooze-frontend
     working_dir: /app
     env_file:
